@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Lab Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .class-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .class-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .class-card h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .class-card p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .qr-code img {
+            max-width: 300px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Lab Exercise Tracker - Admin</h1>
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+        
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Classes</h2>
+                <button class="btn btn-primary" onclick="showAddClassModal()">+ Add Class</button>
+            </div>
+            <div id="classesGrid" class="grid"></div>
+        </div>
+    </div>
+    
+    <!-- Add Class Modal -->
+    <div id="addClassModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Class</h2>
+                <span class="close" onclick="closeModal('addClassModal')">&times;</span>
+            </div>
+            <form id="addClassForm">
+                <label>Class Name</label>
+                <input type="text" id="className" required>
+                
+                <label>Class Code</label>
+                <input type="text" id="classCode" required>
+                
+                <button type="submit" class="btn btn-primary">Create Class</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Class Modal -->
+    <div id="editClassModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Class</h2>
+                <span class="close" onclick="closeModal('editClassModal')">&times;</span>
+            </div>
+            <form id="editClassForm">
+                <label>Class Name</label>
+                <input type="text" id="editClassName" required>
+                
+                <label>Class Code</label>
+                <input type="text" id="editClassCode" required>
+                
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Class Details Modal -->
+    <div id="classDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="classDetailsTitle"></h2>
+                <span class="close" onclick="closeModal('classDetailsModal')">&times;</span>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('students')">Students</div>
+                <div class="tab" onclick="switchTab('exercises')">Exercises</div>
+            </div>
+            
+            <div id="studentsTab" class="tab-content active">
+                <button class="btn btn-primary" onclick="showAddStudentModal()">+ Add Student</button>
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <div id="exercisesTab" class="tab-content">
+                <button class="btn btn-primary" onclick="showAddExerciseModal()">+ Start Exercise</button>
+                <table id="exercisesTable">
+                    <thead>
+                        <tr>
+                            <th>Exercise Name</th>
+                            <th>Created</th>
+                            <th>Completions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Student</h2>
+                <span class="close" onclick="closeModal('addStudentModal')">&times;</span>
+            </div>
+            <form id="addStudentForm">
+                <label>Student Name</label>
+                <input type="text" id="studentName" required>
+                
+                <label>Student Email</label>
+                <input type="email" id="studentEmail" required>
+                
+                <button type="submit" class="btn btn-primary">Add Student</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Exercise Modal -->
+    <div id="addExerciseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Start New Exercise</h2>
+                <span class="close" onclick="closeModal('addExerciseModal')">&times;</span>
+            </div>
+            <form id="addExerciseForm">
+                <label>Exercise Name</label>
+                <input type="text" id="exerciseName" required>
+                
+                <button type="submit" class="btn btn-primary">Generate QR Code</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Exercise QR Code</h2>
+                <span class="close" onclick="closeModal('qrModal')">&times;</span>
+            </div>
+            <div class="qr-code">
+                <h3 id="qrExerciseName"></h3>
+                <img id="qrImage" src="" alt="QR Code">
+                <p>Students scan this code to mark completion</p>
+                <p><strong>URL:</strong> <span id="qrUrl"></span></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Completions Modal -->
+    <div id="completionsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Exercise Completions</h2>
+                <span class="close" onclick="closeModal('completionsModal')">&times;</span>
+            </div>
+            <table id="completionsTable">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Email</th>
+                        <th>Completed At</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let currentClassId = null;
+        let currentEditClassId = null;
+        
+        async function loadClasses() {
+            const response = await fetch('/api/classes');
+            const classes = await response.json();
+            
+            const grid = document.getElementById('classesGrid');
+            if (classes.length === 0) {
+                grid.innerHTML = '<div class="empty-state">No classes yet. Click "Add Class" to get started.</div>';
+                return;
+            }
+            
+            grid.innerHTML = classes.map(c => `
+                <div class="class-card">
+                    <h3>${c.name}</h3>
+                    <p>Code: ${c.code}</p>
+                    <p>${c.student_count} students</p>
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1;" onclick="openClass(${c.id}, '${c.name}')">Open</button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="showEditClassModal(${c.id}, '${c.name}', '${c.code}')">Edit</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showAddClassModal() {
+            document.getElementById('addClassModal').classList.add('active');
+        }
+        
+        function showEditClassModal(classId, className, classCode) {
+            currentEditClassId = classId;
+            document.getElementById('editClassName').value = className;
+            document.getElementById('editClassCode').value = classCode;
+            document.getElementById('editClassModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        document.getElementById('addClassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('className').value;
+            const code = document.getElementById('classCode').value;
+            
+            await fetch('/api/classes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, code })
+            });
+            
+            closeModal('addClassModal');
+            e.target.reset();
+            loadClasses();
+        });
+        
+        document.getElementById('editClassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('editClassName').value;
+            const code = document.getElementById('editClassCode').value;
+            
+            await fetch(`/api/classes/${currentEditClassId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, code })
+            });
+            
+            closeModal('editClassModal');
+            e.target.reset();
+            loadClasses();
+        });
+        
+        async function openClass(classId, className) {
+            currentClassId = classId;
+            document.getElementById('classDetailsTitle').textContent = className;
+            document.getElementById('classDetailsModal').classList.add('active');
+            await loadStudents();
+            await loadExercises();
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+        
+        async function loadStudents() {
+            const response = await fetch(`/api/classes/${currentClassId}/students`);
+            const students = await response.json();
+            
+            const tbody = document.querySelector('#studentsTable tbody');
+            tbody.innerHTML = students.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.email}</td>
+                    <td><button class="btn btn-danger" onclick="deleteStudent(${s.id})">Delete</button></td>
+                </tr>
+            `).join('');
+        }
+        
+        function showAddStudentModal() {
+            document.getElementById('addStudentModal').classList.add('active');
+        }
+        
+        document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('studentName').value;
+            const email = document.getElementById('studentEmail').value;
+            
+            await fetch(`/api/classes/${currentClassId}/students`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email })
+            });
+            
+            closeModal('addStudentModal');
+            e.target.reset();
+            loadStudents();
+        });
+        
+        async function deleteStudent(studentId) {
+            if (confirm('Delete this student?')) {
+                await fetch(`/api/students/${studentId}`, { method: 'DELETE' });
+                loadStudents();
+            }
+        }
+        
+        async function loadExercises() {
+            const response = await fetch(`/api/classes/${currentClassId}/exercises`);
+            const exercises = await response.json();
+            
+            const tbody = document.querySelector('#exercisesTable tbody');
+            tbody.innerHTML = exercises.map(e => `
+                <tr>
+                    <td>${e.name}</td>
+                    <td>${new Date(e.created_at).toLocaleString()}</td>
+                    <td>${e.completion_count}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="viewCompletions(${e.id})">View</button>
+                        <button class="btn btn-secondary" onclick="exportCSV(${e.id}, '${e.name}')">Export CSV</button>
+                        <button class="btn btn-danger" onclick="deleteExercise(${e.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function showAddExerciseModal() {
+            document.getElementById('addExerciseModal').classList.add('active');
+        }
+        
+        document.getElementById('addExerciseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('exerciseName').value;
+            
+            const response = await fetch(`/api/classes/${currentClassId}/exercises`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            
+            const exercise = await response.json();
+            
+            document.getElementById('qrExerciseName').textContent = exercise.name;
+            document.getElementById('qrImage').src = 'data:image/png;base64,' + exercise.qr_code;
+            document.getElementById('qrUrl').textContent = exercise.qr_url;
+            
+            closeModal('addExerciseModal');
+            document.getElementById('qrModal').classList.add('active');
+            e.target.reset();
+            loadExercises();
+        });
+        
+        async function deleteExercise(exerciseId) {
+            if (confirm('Delete this exercise?')) {
+                await fetch(`/api/exercises/${exerciseId}`, { method: 'DELETE' });
+                loadExercises();
+            }
+        }
+        
+        async function exportCSV(exerciseId, exerciseName) {
+            const response = await fetch(`/api/exercises/${exerciseId}/export`);
+            const blob = await response.blob();
+            
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${exerciseName}_completions.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
+        async function viewCompletions(exerciseId) {
+            const response = await fetch(`/api/exercises/${exerciseId}/completions`);
+            const completions = await response.json();
+            
+            const tbody = document.querySelector('#completionsTable tbody');
+            tbody.innerHTML = completions.map(c => `
+                <tr>
+                    <td>${c.student_name}</td>
+                    <td>${c.student_email}</td>
+                    <td>${new Date(c.completed_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('completionsModal').classList.add('active');
+        }
+        
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/admin/login';
+        }
+        
+        loadClasses();
+    </script>
+</body>
+</html>
