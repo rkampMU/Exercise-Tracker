@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Exercise Tracker</title>
+    <title>Lab Exercise Tracker - Home</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -23,85 +23,139 @@
         
         .container {
             background: white;
-            padding: 60px 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            max-width: 600px;
+            padding: 60px 50px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
             width: 100%;
             text-align: center;
         }
         
-        h1 {
-            color: #667eea;
-            font-size: 48px;
+        .logo {
+            font-size: 56px;
             margin-bottom: 20px;
         }
         
-        p {
-            color: #666;
+        h1 {
+            color: #2c3e50;
+            font-size: 44px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
             font-size: 18px;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             line-height: 1.6;
+            font-weight: 300;
         }
         
         .features {
             text-align: left;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
         }
         
         .feature {
             display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            color: #555;
+            flex-direction: column;
+            align-items: flex-start;
         }
         
         .feature-icon {
-            font-size: 24px;
-            margin-right: 15px;
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+        
+        .feature-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .feature-desc {
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .cta-section {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px solid #ecf0f1;
         }
         
         .btn {
             display: inline-block;
-            padding: 15px 40px;
-            background: #667eea;
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-decoration: none;
-            border-radius: 5px;
-            font-size: 18px;
-            transition: background 0.3s;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            border: none;
+            cursor: pointer;
         }
         
         .btn:hover {
-            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 25px;
+            }
+            
+            h1 {
+                font-size: 36px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📚 Lab Exercise Tracker</h1>
-        <p>A modern solution for tracking lab exercise completions in your classes</p>
+        <div class="logo">📚</div>
+        <h1>Lab Exercise Tracker</h1>
+        <p class="subtitle">Streamline your classroom workflow with intelligent exercise completion tracking</p>
         
         <div class="features">
             <div class="feature">
-                <span class="feature-icon">✅</span>
-                <span>Track student exercise completions with QR codes</span>
+                <div class="feature-icon">✅</div>
+                <div class="feature-title">QR Code Tracking</div>
+                <div class="feature-desc">Students scan QR codes to instantly mark exercise completion</div>
             </div>
             <div class="feature">
-                <span class="feature-icon">👥</span>
-                <span>Manage multiple classes and students</span>
+                <div class="feature-icon">👥</div>
+                <div class="feature-title">Class Management</div>
+                <div class="feature-desc">Organize multiple classes and manage student rosters</div>
             </div>
             <div class="feature">
-                <span class="feature-icon">📊</span>
-                <span>View real-time completion statistics</span>
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Real-time Analytics</div>
+                <div class="feature-desc">Monitor completion rates and student progress instantly</div>
             </div>
             <div class="feature">
-                <span class="feature-icon">🔐</span>
-                <span>Secure admin portal for instructors</span>
+                <div class="feature-icon">�</div>
+                <div class="feature-title">CSV Export</div>
+                <div class="feature-desc">Export completion data for further analysis</div>
             </div>
         </div>
         
-        <a href="/admin/login" class="btn">Admin Login</a>
+        <div class="cta-section">
+            <a href="/admin/login" class="btn">→ Login to Dashboard</a>
+        </div>
     </div>
 </body>
 </html>
