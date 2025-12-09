@@ -429,7 +429,10 @@
             </div>
             
             <div id="exercisesTab" class="tab-content">
-                <button class="btn btn-primary" onclick="showAddExerciseModal()">+ Start Exercise</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="showAddExerciseModal()">+ Start Exercise</button>
+                    <button class="btn btn-secondary" onclick="exportClassComprehensive()" style="background: #27ae60;">📊 Export All Exercises</button>
+                </div>
                 <table id="exercisesTable">
                     <thead>
                         <tr>
@@ -711,6 +714,34 @@
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+        }
+        
+        async function exportClassComprehensive() {
+            if (!currentClassId) {
+                alert('Please select a class first');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/classes/${currentClassId}/export`);
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to export');
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `class_${currentClassId}_all_exercises.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error exporting: ' + error.message);
+            }
         }
         
         async function viewCompletions(exerciseId) {

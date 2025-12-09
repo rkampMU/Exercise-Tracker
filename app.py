@@ -408,6 +408,115 @@ def export_exercise(exercise_id):
         print(f"❌ Error exporting exercise: {e}")
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/classes/<int:class_id>/export', methods=['GET'])
+def export_class_comprehensive(class_id):
+    """Export all exercises for a class in a single comprehensive CSV"""
+    if 'admin_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        print(f"Exporting comprehensive CSV for class {class_id}")
+        
+        # Get class info
+        class_response = supabase.table('class').select('*').eq('id', class_id).execute()
+        if not class_response.data:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        class_info = class_response.data[0]
+        
+        # Get all students in class
+        students_response = supabase.table('student').select('*').eq('class_id', class_id).execute()
+        students = {s['id']: s for s in students_response.data} if students_response.data else {}
+        
+        # Get all exercises for class
+        exercises_response = supabase.table('exercise').select('*').eq('class_id', class_id).execute()
+        exercises = exercises_response.data if exercises_response.data else []
+        
+        if not exercises:
+            return jsonify({'error': 'No exercises found for this class'}), 404
+        
+        # Build comprehensive data structure
+        # Key: student_id, Value: dict with student info and completion dates
+        student_data = {}
+        
+        for student_id, student in students.items():
+            student_data[student_id] = {
+                'name': student['name'],
+                'email': student['email'],
+                'completions': {}
+            }
+        
+        # Get completions for each exercise
+        for exercise in exercises:
+            completions_response = supabase.table('completion').select('*').eq('exercise_id', exercise['id']).execute()
+            
+            if completions_response.data:
+                for completion in completions_response.data:
+                    student_id = completion.get('student_id')
+                    if student_id and student_id in student_data:
+                        student_data[student_id]['completions'][exercise['name']] = completion['completed_at']
+        
+        # Create CSV with dynamic columns
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Header row: Student Name, Email, then each exercise name
+        exercise_names = [ex['name'] for ex in exercises]
+        header = ['Student Name', 'Email'] + exercise_names + ['Total Completed', 'Completion Rate']
+        writer.writerow(header)
+        
+        # Data rows
+        for student_id, data in student_data.items():
+            row = [data['name'], data['email']]
+            
+            completed_count = 0
+            for exercise_name in exercise_names:
+                completion_date = data['completions'].get(exercise_name, '')
+                if completion_date:
+                    # Format date nicely
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(completion_date.replace('Z', '+00:00'))
+                        formatted_date = dt.strftime('%Y-%m-%d %H:%M')
+                        row.append(formatted_date)
+                        completed_count += 1
+                    except:
+                        row.append(completion_date)
+                        completed_count += 1
+                else:
+                    row.append('')
+            
+            # Add totals
+            total_exercises = len(exercise_names)
+            completion_rate = f"{(completed_count / total_exercises * 100):.1f}%" if total_exercises > 0 else "0%"
+            row.append(f"{completed_count}/{total_exercises}")
+            row.append(completion_rate)
+            
+            writer.writerow(row)
+        
+        # Add summary row
+        writer.writerow([])
+        writer.writerow(['Summary Statistics'])
+        writer.writerow(['Total Students', len(student_data)])
+        writer.writerow(['Total Exercises', len(exercises)])
+        
+        csv_bytes = io.BytesIO()
+        csv_bytes.write(output.getvalue().encode('utf-8'))
+        csv_bytes.seek(0)
+        
+        print(f"✅ Exported comprehensive CSV for class {class_id}")
+        return send_file(
+            csv_bytes,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f"{class_info['name']}_all_exercises.csv"
+        )
+    except Exception as e:
+        print(f"❌ Error exporting class: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 400
+
 @app.route('/complete/<token>')
 def complete_page(token):
     try:
