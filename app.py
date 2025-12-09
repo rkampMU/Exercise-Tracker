@@ -21,21 +21,26 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(16))
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-print(f"SUPABASE_URL: {SUPABASE_URL}")
-print(f"SUPABASE_KEY: {'*' * 20 if SUPABASE_KEY else 'NOT SET'}")
+# Only print debug info in development
+if os.getenv('FLASK_ENV') != 'production':
+    print(f"SUPABASE_URL: {SUPABASE_URL}")
+    print(f"SUPABASE_KEY: {'*' * 20 if SUPABASE_KEY else 'NOT SET'}")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    print("❌ ERROR: Missing Supabase credentials in .env file!")
-    print("Please set SUPABASE_URL and SUPABASE_KEY")
-    exit(1)
+    error_msg = "❌ ERROR: Missing Supabase credentials!"
+    print(error_msg)
+    if os.getenv('FLASK_ENV') != 'production':
+        exit(1)
 
 try:
     from supabase import create_client, Client
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print("✅ Supabase client initialized successfully")
+    if os.getenv('FLASK_ENV') != 'production':
+        print("✅ Supabase client initialized successfully")
 except Exception as e:
     print(f"❌ Failed to initialize Supabase: {e}")
-    exit(1)
+    if os.getenv('FLASK_ENV') != 'production':
+        exit(1)
 
 # Routes
 @app.route('/')
@@ -50,6 +55,8 @@ def admin_dashboard():
 
 @app.route('/admin/login')
 def admin_login():
+    if 'admin_id' in session:
+        return redirect(url_for('admin_dashboard'))
     return render_template('login.html')
 
 @app.route('/api/login', methods=['POST'])
@@ -479,10 +486,11 @@ if __name__ == '__main__':
     if not os.path.exists('templates'):
         os.makedirs('templates')
     
-    print("\n" + "="*50)
-    print("🚀 ClassTracker - Supabase Edition")
-    print("="*50)
-    print(f"Supabase URL: {SUPABASE_URL}")
-    print("="*50 + "\n")
+    if os.getenv('FLASK_ENV') != 'production':
+        print("\n" + "="*50)
+        print("🚀 ClassTracker - Supabase Edition")
+        print("="*50)
+        print(f"Supabase URL: {SUPABASE_URL}")
+        print("="*50 + "\n")
     
-    app.run(debug=True)
+    app.run(debug=os.getenv('FLASK_ENV') != 'production')
