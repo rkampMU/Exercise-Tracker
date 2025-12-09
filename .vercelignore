@@ -1,0 +1,30 @@
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Development files
+venv/
+ENV/
+env/
+.venv
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Database
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Documentation (optional - uncomment if you don't want these deployed)
+# *.md
+
+# Git
+.git/
+.gitignore

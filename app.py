@@ -602,4 +602,4 @@ if __name__ == '__main__':
         print(f"Supabase URL: {SUPABASE_URL}")
         print("="*50 + "\n")
     
-    app.run(debug=os.getenv('FLASK_ENV') != 'production')
+    app.run(debug=os.getenv('FLASK_ENV') != 'production', host='127.0.0.1', port=5001)
