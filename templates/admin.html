@@ -415,7 +415,10 @@
             </div>
             
             <div id="studentsTab" class="tab-content active">
-                <button class="btn btn-primary" onclick="showAddStudentModal()">+ Add Student</button>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="showAddStudentModal()">+ Add Student</button>
+                    <button class="btn btn-secondary" onclick="showUploadStudentsModal()" style="background: #3498db;">📁 Upload CSV</button>
+                </div>
                 <table id="studentsTable">
                     <thead>
                         <tr>
@@ -464,6 +467,30 @@
                 
                 <button type="submit" class="btn btn-primary">Add Student</button>
             </form>
+        </div>
+    </div>
+    
+    <!-- Upload Students CSV Modal -->
+    <div id="uploadStudentsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Students from CSV</h2>
+                <span class="close" onclick="closeModal('uploadStudentsModal')">&times;</span>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <p><strong>CSV Format:</strong> Your CSV file should have two columns:</p>
+                <pre style="background: #f5f6fa; padding: 15px; border-radius: 8px; margin: 10px 0;">name,email
+John Doe,john@example.com
+Jane Smith,jane@example.com</pre>
+                <p><small>Note: First row should be headers (name,email). Each subsequent row is a student.</small></p>
+            </div>
+            <form id="uploadStudentsForm">
+                <label>Select CSV File</label>
+                <input type="file" id="csvFile" accept=".csv" required style="margin-bottom: 15px;">
+                
+                <button type="submit" class="btn btn-primary">Upload Students</button>
+            </form>
+            <div id="uploadStatus" style="margin-top: 15px;"></div>
         </div>
     </div>
     
@@ -631,6 +658,135 @@
         function showAddStudentModal() {
             document.getElementById('addStudentModal').classList.add('active');
         }
+        
+        function showUploadStudentsModal() {
+            document.getElementById('uploadStudentsModal').classList.add('active');
+            document.getElementById('uploadStatus').innerHTML = '';
+        }
+        
+        document.getElementById('uploadStudentsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a CSV file');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.innerHTML = '<p style="color: #3498db;">Processing CSV...</p>';
+            
+            try {
+                const text = await file.text();
+                const lines = text.split('\n').filter(line => line.trim());
+                
+                if (lines.length < 2) {
+                    statusDiv.innerHTML = '<p style="color: #e74c3c;">❌ CSV file is empty or has no data rows</p>';
+                    return;
+                }
+                
+                // Skip header row and parse data
+                const students = [];
+                const errors = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    // Simple CSV parsing (handles basic cases)
+                    const parts = line.split(',').map(p => p.trim().replace(/^["']|["']$/g, ''));
+                    
+                    if (parts.length < 2) {
+                        errors.push(`Line ${i + 1}: Invalid format`);
+                        continue;
+                    }
+                    
+                    const name = parts[0];
+                    const email = parts[1];
+                    
+                    if (!name || !email) {
+                        errors.push(`Line ${i + 1}: Missing name or email`);
+                        continue;
+                    }
+                    
+                    // Basic email validation
+                    if (!email.includes('@')) {
+                        errors.push(`Line ${i + 1}: Invalid email format (${email})`);
+                        continue;
+                    }
+                    
+                    students.push({ name, email });
+                }
+                
+                if (students.length === 0) {
+                    statusDiv.innerHTML = '<p style="color: #e74c3c;">❌ No valid students found in CSV</p>';
+                    if (errors.length > 0) {
+                        statusDiv.innerHTML += '<p><strong>Errors:</strong></p><ul>' + 
+                            errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                    }
+                    return;
+                }
+                
+                // Upload students one by one
+                statusDiv.innerHTML = `<p style="color: #3498db;">Uploading ${students.length} students...</p>`;
+                
+                let successCount = 0;
+                let failCount = 0;
+                const failedStudents = [];
+                
+                for (const student of students) {
+                    try {
+                        const response = await fetch(`/api/classes/${currentClassId}/students`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(student)
+                        });
+                        
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                            failedStudents.push(`${student.name} (${student.email})`);
+                        }
+                    } catch (error) {
+                        failCount++;
+                        failedStudents.push(`${student.name} (${student.email})`);
+                    }
+                }
+                
+                // Show results
+                let resultHTML = `<p style="color: #27ae60;">✅ Successfully added ${successCount} students</p>`;
+                if (failCount > 0) {
+                    resultHTML += `<p style="color: #e74c3c;">❌ Failed to add ${failCount} students:</p>`;
+                    resultHTML += '<ul>' + failedStudents.map(s => `<li>${s}</li>`).join('') + '</ul>';
+                }
+                if (errors.length > 0) {
+                    resultHTML += '<p style="color: #f39c12;"><strong>CSV Parsing Errors:</strong></p><ul>' + 
+                        errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                }
+                
+                statusDiv.innerHTML = resultHTML;
+                
+                // Reload students list
+                await loadStudents();
+                
+                // Clear file input
+                fileInput.value = '';
+                
+                // Auto-close after 3 seconds if all successful
+                if (failCount === 0 && errors.length === 0) {
+                    setTimeout(() => {
+                        closeModal('uploadStudentsModal');
+                        statusDiv.innerHTML = '';
+                    }, 3000);
+                }
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p style="color: #e74c3c;">❌ Error: ${error.message}</p>`;
+            }
+        });
         
         document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
             e.preventDefault();
