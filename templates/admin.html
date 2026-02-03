@@ -572,6 +572,7 @@ Smith, Jane,jane@example.com</pre>
                     <div style="margin-top: 10px; display: flex; gap: 10px;">
                         <button class="btn btn-primary" style="flex: 1;" onclick="openClass(${c.id}, '${c.name}')">Open</button>
                         <button class="btn btn-secondary" style="flex: 1;" onclick="showEditClassModal(${c.id}, '${c.name}', '${c.code}')">Edit</button>
+                        <button class="btn btn-danger" style="flex: 1;" onclick="deleteClass(${c.id}, '${c.name}')">Delete</button>
                     </div>
                 </div>
             `).join('');
@@ -586,6 +587,25 @@ Smith, Jane,jane@example.com</pre>
             document.getElementById('editClassName').value = className;
             document.getElementById('editClassCode').value = classCode;
             document.getElementById('editClassModal').classList.add('active');
+        }
+        
+        async function deleteClass(classId, className) {
+            if (confirm(`Are you sure you want to delete "${className}"?\n\nThis will permanently delete:\n- The class\n- All students in the class\n- All exercises\n- All completion records\n\nThis action cannot be undone!`)) {
+                try {
+                    const response = await fetch(`/api/classes/${classId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        alert(`Class "${className}" has been deleted successfully.`);
+                        await loadClasses();
+                    } else {
+                        alert('Failed to delete class. Please try again.');
+                    }
+                } catch (error) {
+                    alert('Error deleting class: ' + error.message);
+                }
+            }
         }
         
         function closeModal(modalId) {
