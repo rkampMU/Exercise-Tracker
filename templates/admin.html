@@ -525,6 +525,7 @@
     <script>
         let currentClassId = null;
         let currentEditClassId = null;
+        let qrCodeCache = {}; // Cache QR codes in memory
         
         async function loadClasses() {
             const response = await fetch('/api/classes');
@@ -598,6 +599,7 @@
         
         async function openClass(classId, className) {
             currentClassId = classId;
+            qrCodeCache = {}; // Clear QR cache when opening a new class
             document.getElementById('classDetailsTitle').textContent = className;
             document.getElementById('classDetailsModal').classList.add('active');
             await loadStudents();
@@ -664,6 +666,7 @@
                     <td>${new Date(e.created_at).toLocaleString()}</td>
                     <td>${e.completion_count}</td>
                     <td>
+                        <button class="btn btn-primary" onclick="showQRCode(${e.id}, '${e.name}')">Show QR</button>
                         <button class="btn btn-secondary" onclick="viewCompletions(${e.id})">View</button>
                         <button class="btn btn-secondary" onclick="exportCSV(${e.id}, '${e.name}')">Export CSV</button>
                         <button class="btn btn-danger" onclick="deleteExercise(${e.id})">Delete</button>
@@ -688,6 +691,14 @@
             
             const exercise = await response.json();
             
+            // Cache the QR code data
+            qrCodeCache[exercise.id] = {
+                name: exercise.name,
+                qr_code: exercise.qr_code,
+                qr_url: exercise.qr_url
+            };
+            
+            // Display QR code immediately
             document.getElementById('qrExerciseName').textContent = exercise.name;
             document.getElementById('qrImage').src = 'data:image/png;base64,' + exercise.qr_code;
             document.getElementById('qrUrl').textContent = exercise.qr_url;
@@ -698,9 +709,48 @@
             loadExercises();
         });
         
+        async function showQRCode(exerciseId, exerciseName) {
+            // Check if QR code is already cached
+            if (qrCodeCache[exerciseId]) {
+                const cached = qrCodeCache[exerciseId];
+                document.getElementById('qrExerciseName').textContent = cached.name;
+                document.getElementById('qrImage').src = 'data:image/png;base64,' + cached.qr_code;
+                document.getElementById('qrUrl').textContent = cached.qr_url;
+                document.getElementById('qrModal').classList.add('active');
+                return;
+            }
+            
+            // Fetch QR code from server if not cached
+            try {
+                const response = await fetch(`/api/exercises/${exerciseId}`);
+                if (!response.ok) {
+                    alert('Failed to load QR code');
+                    return;
+                }
+                
+                const exercise = await response.json();
+                
+                // Cache it for future use
+                qrCodeCache[exerciseId] = {
+                    name: exercise.name,
+                    qr_code: exercise.qr_code,
+                    qr_url: exercise.qr_url
+                };
+                
+                // Display QR code
+                document.getElementById('qrExerciseName').textContent = exercise.name;
+                document.getElementById('qrImage').src = 'data:image/png;base64,' + exercise.qr_code;
+                document.getElementById('qrUrl').textContent = exercise.qr_url;
+                document.getElementById('qrModal').classList.add('active');
+            } catch (error) {
+                alert('Error loading QR code: ' + error.message);
+            }
+        }
+        
         async function deleteExercise(exerciseId) {
             if (confirm('Delete this exercise?')) {
                 await fetch(`/api/exercises/${exerciseId}`, { method: 'DELETE' });
+                delete qrCodeCache[exerciseId]; // Remove from cache
                 loadExercises();
             }
         }

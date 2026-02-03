@@ -320,19 +320,51 @@ def api_exercises(class_id):
         print(f"❌ Error in api_exercises: {e}")
         return jsonify({'error': str(e)}), 400
 
-@app.route('/api/exercises/<int:exercise_id>', methods=['DELETE'])
-def delete_exercise(exercise_id):
+@app.route('/api/exercises/<int:exercise_id>', methods=['GET', 'DELETE'])
+def exercise_detail(exercise_id):
     if 'admin_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
-        print(f"Deleting exercise {exercise_id}")
-        supabase.table('completion').delete().eq('exercise_id', exercise_id).execute()
-        supabase.table('exercise').delete().eq('id', exercise_id).execute()
-        print(f"✅ Exercise deleted: {exercise_id}")
-        return jsonify({'success': True}), 200
+        if request.method == 'GET':
+            # Get exercise details and regenerate QR code
+            print(f"Getting QR code for exercise {exercise_id}")
+            response = supabase.table('exercise').select('*').eq('id', exercise_id).execute()
+            
+            if not response.data:
+                return jsonify({'error': 'Exercise not found'}), 404
+            
+            exercise = response.data[0]
+            
+            # Generate QR code
+            qr_url = request.host_url + f'complete/{exercise["qr_token"]}'
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(qr_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            buf.seek(0)
+            qr_base64 = base64.b64encode(buf.getvalue()).decode()
+            
+            print(f"✅ QR code generated for exercise {exercise_id}")
+            return jsonify({
+                'id': exercise['id'],
+                'name': exercise['name'],
+                'qr_code': qr_base64,
+                'qr_url': qr_url,
+                'created_at': exercise['created_at']
+            }), 200
+        
+        elif request.method == 'DELETE':
+            print(f"Deleting exercise {exercise_id}")
+            supabase.table('completion').delete().eq('exercise_id', exercise_id).execute()
+            supabase.table('exercise').delete().eq('id', exercise_id).execute()
+            print(f"✅ Exercise deleted: {exercise_id}")
+            return jsonify({'success': True}), 200
     except Exception as e:
-        print(f"❌ Error deleting exercise: {e}")
+        print(f"❌ Error in exercise_detail: {e}")
         return jsonify({'error': str(e)}), 400
 
 @app.route('/api/exercises/<int:exercise_id>/completions', methods=['GET'])
