@@ -483,9 +483,9 @@
         </div>
     </div>
     
-    <!-- QR Code Modal -->
-    <div id="qrModal" class="modal">
-        <div class="modal-content">
+    <!-- QR Code Modal (Does not close on background click) -->
+    <div id="qrModal" class="modal" onclick="event.stopPropagation()">
+        <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <h2>Exercise QR Code</h2>
                 <span class="close" onclick="closeModal('qrModal')">&times;</span>
@@ -495,6 +495,9 @@
                 <img id="qrImage" src="" alt="QR Code">
                 <p>Students scan this code to mark completion</p>
                 <p><strong>URL:</strong> <span id="qrUrl"></span></p>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn btn-secondary" onclick="closeModal('qrModal')">Close</button>
             </div>
         </div>
     </div>
@@ -763,6 +766,18 @@
         async function logout() {
             await fetch('/api/logout', { method: 'POST' });
             window.location.href = '/admin/login';
+        }
+        
+        // Close modals when clicking outside (except QR modal)
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                // Don't close QR modal when clicking outside
+                if (event.target.id === 'qrModal') {
+                    return;
+                }
+                // Close other modals
+                event.target.classList.remove('active');
+            }
         }
         
         loadClasses();
