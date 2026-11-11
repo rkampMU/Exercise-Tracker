@@ -230,8 +230,9 @@ def api_students(class_id):
             return jsonify({'error': 'Failed to create student'}), 400
         
         # GET - retrieve all students in class
-        response = supabase.table('student').select('*').eq('class_id', class_id).execute()
+        response = supabase.table('student').select('*').eq('class_id', class_id).order('name').execute()
         students_list = response.data if response.data else []
+        students_list.sort(key=lambda s: (s.get('name') or '').lower())
         print(f"✅ Retrieved {len(students_list)} students for class {class_id}")
         return jsonify(students_list), 200
     
